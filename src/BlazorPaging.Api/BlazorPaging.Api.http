@@ -1,0 +1,5 @@
+@BlazorPaging.Api_HostAddress = http://localhost:5037
+
+GET {{BlazorPaging.Api_HostAddress}}/api/company/?pn=1&ps=10&sf=name&so=asc
+Accept: application/json
+###
