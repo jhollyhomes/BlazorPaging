@@ -1,0 +1,131 @@
+﻿@using BlazorPaging.Shared
+
+@inject IHttpClientFactory ClientFactory
+
+<div class="table w-full m-5">
+    <div class="table-header-group">
+        <div class="table-row">
+            <div class="table-cell">
+                <button @onclick="@(() => Sort("Suffix"))" class="flex px-1 py-3.5 text-left text-sm font-semibold text-gray-700">
+                    Suffix
+                    <SortOrder FieldOrder="@currentSortOrder" FieldName="Suffix" SelectedFieldName="@currentSortField" />
+                </button>
+            </div>
+            <div class="table-cell">
+                <button @onclick="@(() => Sort("Name"))" class="flex px-1 py-3.5 text-center text-sm font-semibold text-gray-700">
+                    <span>Name</span>
+                    <SortOrder FieldOrder="@currentSortOrder" FieldName="Name" SelectedFieldName="@currentSortField" />
+                </button>
+            </div>
+            <div class="table-cell">
+                <button @onclick="@(() => Sort("Reference"))" class="flex px-1 py-3.5 text-left text-sm font-semibold text-gray-700">
+                    Reference
+                    <SortOrder FieldOrder="@currentSortOrder" FieldName="Reference" SelectedFieldName="@currentSortField" />
+                </button>
+            </div>
+            <div class="table-cell">
+            </div>
+        </div>
+    </div>
+
+    @if (companys == null)
+    {
+        <span>Loading...</span>
+    }
+    else
+    {
+        <div class="table-row-group">
+            @foreach (var company in companys)
+            {
+                <div class="table-row">
+                    <div class="table-cell whitespace-nowrap px-1 py-2 text-sm text-gray-600">@company.Suffix</div>
+                    <div class="table-cell whitespace-nowrap px-1 py-2 text-sm text-gray-600">@company.Name</div>
+                    <div class="table-cell whitespace-nowrap px-1 py-2 text-sm text-gray-600">@company.Reference</div>
+                    <div class="table-cell whitespace-nowrap px-1 py-2 text-sm text-gray-600">Edit</div>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+<div class="flex flex-row m-5 justify-between">
+    <PageSizer PageSize="pageSize" OnChange="PageSizeChanged" />
+    <TotalPages TotalNoOfPages="totalRecords" />
+    <Pagination PageNumber="pageNumber" PageSize="pageSize" TotalRecords="totalRecords" OnChange="PageChanged" />
+</div>
+
+@code {
+
+    private List<PagedCompany>? companys;
+
+    private int pageNumber = 1;
+    private int pageSize = 5;
+
+    private string currentSortField = "Name";
+    private string currentSortOrder = WebConstants.SortAscending;
+
+    private int totalRecords = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetCompanies();
+    }
+
+    private async Task GetCompanies()
+    {
+        companys = null;
+
+        StateHasChanged();
+
+        var url = $"/api/company?pn={pageNumber}&ps={pageSize}&sf={currentSortField}&so={currentSortOrder}";
+
+        var client = ClientFactory.CreateClient(WebConstants.BlazorPagingApiName);
+        var result = await client.GetFromJsonAsync<PagedCompanys>(url);
+
+        if (result is not null)
+        {
+            companys = result.Companys;
+            totalRecords = result.RecordCount;
+
+            StateHasChanged();
+        }
+    }
+
+    private async void PageChanged(int newPageNumber)
+    {
+        pageNumber = newPageNumber;
+
+        await GetCompanies();
+    }
+
+    private async void PageSizeChanged(int size)
+    {
+        pageSize = size;
+        pageNumber = 1;
+
+        await GetCompanies();
+    }
+
+    private async Task Sort(string field)
+    {
+        if (field == currentSortField)
+        {
+            if (currentSortOrder == WebConstants.SortAscending)
+            {
+                currentSortOrder = WebConstants.SortDescending;
+            }
+            else
+            {
+                currentSortOrder = WebConstants.SortAscending;
+            }
+        }
+        else
+        {
+            currentSortField = field;
+            currentSortOrder = WebConstants.SortAscending;
+        }
+
+        await GetCompanies();
+    }
+}
